@@ -1,101 +1,283 @@
-import Image from "next/image";
+import React, { useState } from 'react';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { ThumbsUp, MessageCircle, Reply } from 'lucide-react';
 
-export default function Home() {
+const MainBoard = () => {
+  const [posts, setPosts] = useState([]);
+
+  const handlePostSubmit = (newPost) => {
+    setPosts([...posts, newPost]);
+  };
+
+  const handleLikeToggle = (postId) => {
+    const updatedPosts = posts.map(post =>
+        post.id === postId
+            ? {
+              ...post,
+              likes: post.userLiked ? post.likes - 1 : post.likes + 1,
+              userLiked: !post.userLiked
+            }
+            : post
+    );
+    setPosts(updatedPosts);
+  };
+
+  const handleAddComment = (postId, newComment) => {
+    const updatedPosts = posts.map(post =>
+        post.id === postId
+            ? {
+              ...post,
+              comments: [...post.comments, newComment]
+            }
+            : post
+    );
+    setPosts(updatedPosts);
+  };
+
+  const handleAddReply = (postId, commentId, newReply) => {
+    const updatedPosts = posts.map(post => {
+      if (post.id === postId) {
+        const updatedComments = post.comments.map(comment => {
+          if (comment.id === commentId) {
+            return {
+              ...comment,
+              replies: [...comment.replies, newReply]
+            };
+          }
+          return comment;
+        });
+        return {
+          ...post,
+          comments: updatedComments
+        };
+      }
+      return post;
+    });
+    setPosts(updatedPosts);
+  };
+
   return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              app/page.js
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+      <div className="container mx-auto p-4">
+        <h1 className="text-2xl font-bold mb-4">익명 게시판</h1>
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
-        </div>
-      </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
+        <PostWriteSection onPostSubmit={handlePostSubmit} />
+
+        <PostList
+            posts={posts}
+            onLikeToggle={handleLikeToggle}
+            onAddComment={handleAddComment}
+            onAddReply={handleAddReply}
+        />
+      </div>
   );
-}
+};
+
+const PostWriteSection = ({ onPostSubmit }) => {
+  const [title, setTitle] = useState('');
+  const [content, setContent] = useState('');
+
+  const handleSubmit = () => {
+    if (title.trim() && content.trim()) {
+      const newPost = {
+        id: Date.now(),
+        title,
+        content,
+        createdAt: new Date(),
+        likes: 0,
+        userLiked: false,
+        comments: []
+      };
+      onPostSubmit(newPost);
+      setTitle('');
+      setContent('');
+    }
+  };
+
+  return (
+      <Card className="mb-4">
+        <CardHeader>
+          <CardTitle>새 글 작성</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Input
+              placeholder="제목"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              className="mb-2"
+          />
+          <textarea
+              placeholder="내용을 입력하세요"
+              value={content}
+              onChange={(e) => setContent(e.target.value)}
+              className="w-full border rounded p-2 mb-2"
+              rows={4}
+          />
+          <Button onClick={handleSubmit}>글 등록</Button>
+        </CardContent>
+      </Card>
+  );
+};
+
+const PostList = ({ posts, onLikeToggle, onAddComment, onAddReply }) => {
+  return (
+      <div>
+        {posts.map((post) => (
+            <PostItem
+                key={post.id}
+                post={post}
+                onLikeToggle={onLikeToggle}
+                onAddComment={onAddComment}
+                onAddReply={onAddReply}
+            />
+        ))}
+      </div>
+  );
+};
+
+const PostItem = ({ post, onLikeToggle, onAddComment, onAddReply }) => {
+  const [newComment, setNewComment] = useState('');
+
+  const handleCommentSubmit = () => {
+    if (newComment.trim()) {
+      const comment = {
+        id: Date.now(),
+        content: newComment,
+        createdAt: new Date(),
+        replies: []
+      };
+      onAddComment(post.id, comment);
+      setNewComment('');
+    }
+  };
+
+  return (
+      <Card className="mb-2">
+        <CardHeader>
+          <CardTitle>{post.title}</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p>{post.content}</p>
+
+          <div className="mt-4 space-y-2">
+            <div className="flex items-center space-x-2">
+              <Button
+                  variant={post.userLiked ? "default" : "outline"}
+                  onClick={() => onLikeToggle(post.id)}
+                  className="flex items-center"
+              >
+                <ThumbsUp className="mr-2 h-4 w-4" />
+                좋아요 {post.likes}
+              </Button>
+            </div>
+
+            <div className="flex space-x-2 mt-2">
+              <Input
+                  placeholder="댓글을 입력하세요"
+                  value={newComment}
+                  onChange={(e) => setNewComment(e.target.value)}
+                  className="flex-grow"
+              />
+              <Button onClick={handleCommentSubmit}>
+                <MessageCircle className="mr-2 h-4 w-4" />
+                등록
+              </Button>
+            </div>
+
+            <div className="mt-2 space-y-2">
+              {post.comments.map((comment) => (
+                  <CommentItem
+                      key={comment.id}
+                      postId={post.id}
+                      comment={comment}
+                      onAddReply={onAddReply}
+                  />
+              ))}
+            </div>
+          </div>
+
+          <div className="flex justify-between mt-2 text-sm text-gray-500">
+            <span>{post.createdAt.toLocaleString()}</span>
+          </div>
+        </CardContent>
+      </Card>
+  );
+};
+
+const CommentItem = ({ postId, comment, onAddReply }) => {
+  const [showReplies, setShowReplies] = useState(false);
+  const [replyContent, setReplyContent] = useState('');
+  const [isReplyMode, setIsReplyMode] = useState(false);
+
+  const handleReplySubmit = () => {
+    if (replyContent.trim()) {
+      const newReply = {
+        id: Date.now(),
+        content: replyContent,
+        createdAt: new Date()
+      };
+      onAddReply(postId, comment.id, newReply);
+      setReplyContent('');
+      setIsReplyMode(false);
+    }
+  };
+
+  return (
+      <div className="bg-gray-50 p-2 rounded">
+        <div className="flex justify-between items-center">
+          <div>
+            <div className="text-sm">{comment.content}</div>
+            <div className="text-xs text-gray-500 mt-1">
+              {comment.createdAt.toLocaleString()}
+            </div>
+          </div>
+          <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setIsReplyMode(!isReplyMode)}
+          >
+            <Reply className="mr-2 h-4 w-4" />
+            답글
+          </Button>
+        </div>
+
+        {/* 답글 작성 입력창 */}
+        {isReplyMode && (
+            <div className="flex space-x-2 mt-2">
+              <Input
+                  placeholder="답글 작성"
+                  value={replyContent}
+                  onChange={(e) => setReplyContent(e.target.value)}
+                  className="flex-grow"
+              />
+              <Button size="sm" onClick={handleReplySubmit}>
+                등록
+              </Button>
+            </div>
+        )}
+
+        {/* 답글 목록 */}
+        <div className="mt-2 space-y-2">
+          <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowReplies(!showReplies)}
+          >
+            답글 {comment.replies.length}개
+          </Button>
+
+          {showReplies && comment.replies.map((reply) => (
+              <div key={reply.id} className="pl-4 mt-2 border-l-2 bg-gray-100 p-2 rounded">
+                <div className="text-sm">{reply.content}</div>
+                <div className="text-xs text-gray-500">
+                  {reply.createdAt.toLocaleString()}
+                </div>
+              </div>
+          ))}
+        </div>
+      </div>
+  );
+};
+
+export default MainBoard;
